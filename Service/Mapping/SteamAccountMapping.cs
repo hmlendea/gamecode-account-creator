@@ -11,6 +11,7 @@ namespace GameCodeAccountCreator.Service.Mapping
         internal static SteamAccount ToServiceModel(this SteamAccountEntity dataObject)
         {
             SteamAccount serviceModel = new SteamAccount();
+            serviceModel.Id = dataObject.Id;
             serviceModel.Username = dataObject.Username;
             serviceModel.Password = dataObject.Password;
 

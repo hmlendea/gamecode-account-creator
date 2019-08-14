@@ -4,6 +4,8 @@ namespace GameCodeAccountCreator.Service.Models
     {
         string username;
 
+        public string Id { get; set; }
+
         public string Username
         {
             get { return username.ToLower(); }

@@ -28,13 +28,15 @@ namespace GameCodeAccountCreator.Service.Processors
             GoToUrl(LogInUrl);
 
             By registrationTabSelector = By.Id("_register");
-            By usernameInputSelector = By.Name(@"//*[@id='registerForm']/form/input[@name='name']");
+            By closeNotificationButtoNSelector = By.XPath(@"//*[@class='csa-close-button']/a");
+            By usernameInputSelector = By.XPath(@"//*[@id='registerForm']/form/input[@name='name']");
             By emailInputSelector = By.XPath(@"//*[@id='registerForm']/form/input[@name='email']");
-            By password1InputSelector = By.Name(@"//*[@id='registerForm']/form/input[@name='password']");
-            By password2InputSelector = By.Name(@"//*[@id='registerForm']/form/input[@name='password_confirmation']");
+            By password1InputSelector = By.XPath(@"//*[@id='registerForm']/form/input[@name='password']");
+            By password2InputSelector = By.XPath(@"//*[@id='registerForm']/form/input[@name='password_confirmation']");
             By artsCardSelector = By.Id("text_arts");
 
             Click(registrationTabSelector);
+            Click(closeNotificationButtoNSelector);
 
             SetText(usernameInputSelector, account.Username);
             SetText(emailInputSelector, $"{account.Username}@yopmail.com");
@@ -51,8 +53,15 @@ namespace GameCodeAccountCreator.Service.Processors
             By steamConnectionButtonSelector = By.XPath(@"//i[contains(@class,'fa-steam')]/../a/button");
             By logInButtonSelector = By.Id("imageLogin");
             By gameCard1Selector = By.Id("gamesToggle_1");
+            By kinguinAlertSelector = By.ClassName("edrone--push--alert-container");
 
             Click(steamConnectionButtonSelector);
+
+            // TODO: Workaround the annoying redirect ad
+            Wait();
+            NewTab(AccountsUrl);
+            Click(steamConnectionButtonSelector);
+
             Click(logInButtonSelector);
 
             WaitForElementToExist(gameCard1Selector);

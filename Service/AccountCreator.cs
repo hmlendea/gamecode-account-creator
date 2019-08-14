@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using NuciDAL.Repositories;
 using NuciLog.Core;
@@ -21,7 +22,6 @@ namespace GameCodeAccountCreator.Service
         readonly IRepository<SteamAccountEntity> accountsRepository;
         readonly DebugSettings debugSettings;
         readonly ILogger logger;
-        readonly IWebDriver driver;
 
         public AccountCreator(
             IRepository<SteamAccountEntity> accountsRepository,
@@ -31,35 +31,41 @@ namespace GameCodeAccountCreator.Service
             this.accountsRepository = accountsRepository;
             this.debugSettings = debugSettings;
             this.logger = logger;
-
-            driver = SetupDriver();
         }
 
         public void CreateAccounts()
         {
-            IEnumerable<SteamAccount> accounts = accountsRepository.GetAll().ToServiceModels();
+            IEnumerable<SteamAccount> accounts = accountsRepository.GetAll().ToServiceModels().ToList();
 
             foreach (SteamAccount account in accounts)
             {
-                try
-                {
-                    CreateAccount(account);
-                }
-                catch { }
-            }
+                CreateAccount(account);
 
-            driver.Quit();
+                accountsRepository.Remove(account.Id);
+                accountsRepository.ApplyChanges();
+            }
         }
 
         void CreateAccount(SteamAccount account)
         {
-            LogInToSteam(account);
-            RegisterOnGameCode(account);
+            IWebDriver driver = SetupDriver();
 
-            driver.Manage().Cookies.DeleteAllCookies();
+            try
+            {
+                LogInToSteam(driver, account);
+                RegisterOnGameCode(driver, account);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+            }
+            finally
+            {
+                driver.Quit();
+            }
         }
 
-        void LogInToSteam(SteamAccount account)
+        void LogInToSteam(IWebDriver driver, SteamAccount account)
         {
             logger.Info(MyOperation.SteamLogIn, OperationStatus.Started, new LogInfo(MyLogInfoKey.Username, account.Username));
 
@@ -78,7 +84,7 @@ namespace GameCodeAccountCreator.Service
             }
         }
 
-        void RegisterOnGameCode(SteamAccount account)
+        void RegisterOnGameCode(IWebDriver driver, SteamAccount account)
         {
             logger.Info(MyOperation.GameCodeRegistration, OperationStatus.Started, new LogInfo(MyLogInfoKey.Username, account.Username));
 
@@ -93,7 +99,7 @@ namespace GameCodeAccountCreator.Service
             }
             catch (Exception ex)
             {
-                logger.Error(MyOperation.GameCodeRegistration, OperationStatus.Failure, ex, new LogInfo(MyLogInfoKey.Username, account.Username));
+                logger.Error(MyOperation.GameCodeRegistration, OperationStatus.Failure, ex.StackTrace, ex, new LogInfo(MyLogInfoKey.Username, account.Username));
                 throw;
             }
         }
