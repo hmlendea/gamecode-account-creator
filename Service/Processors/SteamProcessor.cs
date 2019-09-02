@@ -30,6 +30,8 @@ namespace GameCodeAccountCreator.Service.Processors
             By avatarSelector = By.XPath(@"//a[contains(@class,'playerAvatar')]");
             By loginButtonSelector = By.XPath(@"//*[@id='login_btn_signin']/button");
 
+            Click(loginButtonSelector);
+
             SetText(usernameSelector, account.Username);
             SetText(passwordSelector, account.Password);
             

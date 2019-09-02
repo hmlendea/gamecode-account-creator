@@ -10,7 +10,6 @@ using NuciLog.Core;
 using GameCodeAccountCreator.Configuration;
 using GameCodeAccountCreator.DataAccess.DataObjects;
 using GameCodeAccountCreator.Service;
-using GameCodeAccountCreator.Service.Models;
 
 namespace GameCodeAccountCreator
 {
