@@ -15,17 +15,13 @@ namespace GameCodeAccountCreator.Service.Processors
         public string AccountsUrl => $"{HomePageUrl}/users/accounts/all";
 
         readonly IWebProcessor webProcessor;
-        readonly SteamAccount account;
 
-        public GameCodeProcessor(
-            IWebProcessor webProcessor,
-            SteamAccount account)
+        public GameCodeProcessor(IWebProcessor webProcessor)
         {
             this.webProcessor = webProcessor;
-            this.account = account;
         }
 
-        public void Register()
+        public void Register(SteamAccount account)
         {
             webProcessor.GoToUrl(LogInUrl);
 

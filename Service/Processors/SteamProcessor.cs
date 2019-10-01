@@ -14,16 +14,13 @@ namespace GameCodeAccountCreator.Service.Processors
         public string LoginUrl => $"{HomePageUrl}/login/?redir=&redir_ssl=1";
 
         readonly IWebProcessor webProcessor;
-        readonly SteamAccount account;
 
-        public SteamProcessor(
-            IWebProcessor webProcessor,
-            SteamAccount account)
+        public SteamProcessor(IWebProcessor webProcessor)
         {
-            this.account = account;
+            this.webProcessor = webProcessor;
         }
         
-        public void LogIn()
+        public void LogIn(SteamAccount account)
         {
             webProcessor.GoToUrl(LoginUrl);
 

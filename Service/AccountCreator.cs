@@ -5,9 +5,6 @@ using System.Linq;
 using NuciDAL.Repositories;
 using NuciLog.Core;
 
-using OpenQA.Selenium;
-using OpenQA.Selenium.Chrome;
-
 using GameCodeAccountCreator.Configuration;
 using GameCodeAccountCreator.DataAccess.DataObjects;
 using GameCodeAccountCreator.Logging;
@@ -64,7 +61,7 @@ namespace GameCodeAccountCreator.Service
 
             try
             {
-                steamProcessor.LogIn();
+                steamProcessor.LogIn(account);
                 logger.Debug(MyOperation.SteamLogIn, OperationStatus.Success, new LogInfo(MyLogInfoKey.Username, account.Username));
             }
             catch (Exception ex)
@@ -80,7 +77,7 @@ namespace GameCodeAccountCreator.Service
 
             try
             {
-                gameCodeProcessor.Register();
+                gameCodeProcessor.Register(account);
                 gameCodeProcessor.LinkSteamAccount();
 
                 logger.Debug(MyOperation.GameCodeRegistration, OperationStatus.Success, new LogInfo(MyLogInfoKey.Username, account.Username));
