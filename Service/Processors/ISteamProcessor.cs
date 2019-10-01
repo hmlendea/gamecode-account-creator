@@ -1,9 +1,11 @@
-using NuciWeb;
+using GameCodeAccountCreator.Service.Models;
 
 namespace GameCodeAccountCreator.Service.Processors
 {
-    public interface ISteamProcessor : IWebProcessor
+    public interface ISteamProcessor
     {
-        void LogIn();
+        void LogIn(SteamAccount account);
+
+        void ClearCookies();
     }
 }

@@ -1,3 +1,5 @@
+using System.Security.Authentication;
+
 using NuciWeb;
 
 using OpenQA.Selenium;
@@ -6,38 +8,58 @@ using GameCodeAccountCreator.Service.Models;
 
 namespace GameCodeAccountCreator.Service.Processors
 {
-    public sealed class SteamProcessor : WebProcessor, ISteamProcessor
+    public sealed class SteamProcessor : ISteamProcessor
     {
         public string HomePageUrl => "https://store.steampowered.com";
         public string LoginUrl => $"{HomePageUrl}/login/?redir=&redir_ssl=1";
 
-        readonly SteamAccount account;
+        readonly IWebDriver webDriver;
+        readonly IWebProcessor webProcessor;
 
         public SteamProcessor(
-            IWebDriver driver,
-            SteamAccount account)
-            : base(driver)
+            IWebDriver webDriver,
+            IWebProcessor webProcessor)
         {
-            this.account = account;
+            this.webDriver = webDriver;
+            this.webProcessor = webProcessor;
         }
         
-        public void LogIn()
+        public void LogIn(SteamAccount account)
         {
-            GoToUrl(LoginUrl);
+            webProcessor.GoToUrl(LoginUrl);
 
             By usernameSelector = By.Id("input_username");
             By passwordSelector = By.Id("input_password");
+            By captchaInputSelector = By.Id("input_captcha");
+            By logInButtonSelector = By.XPath(@"//*[@id='login_btn_signin']/button");
+            By steamGuardCodeInputSelector = By.Id("twofactorcode_entry");
             By avatarSelector = By.XPath(@"//a[contains(@class,'playerAvatar')]");
-            By loginButtonSelector = By.XPath(@"//*[@id='login_btn_signin']/button");
-
-            Click(loginButtonSelector);
-
-            SetText(usernameSelector, account.Username);
-            SetText(passwordSelector, account.Password);
             
-            Click(loginButtonSelector);
-            
-            WaitForElementToExist(avatarSelector);
+            if (webProcessor.IsElementVisible(captchaInputSelector))
+            {
+                throw new AuthenticationException("Captcha input required");
+            }
+
+            webProcessor.SetText(usernameSelector, account.Username);
+            webProcessor.SetText(passwordSelector, account.Password);
+
+            webProcessor.Click(logInButtonSelector);
+            webProcessor.WaitForAnyElementToBeVisible(steamGuardCodeInputSelector, avatarSelector);
+
+            if (webProcessor.IsElementVisible(steamGuardCodeInputSelector))
+            {
+                throw new AuthenticationException("SteamGuard input required");
+            }
+        }
+
+        public void ClearCookies()
+        {
+            webProcessor.GoToUrl(LoginUrl);
+
+            By logoSelector = By.Id("logo-holder");
+
+            webProcessor.WaitForElementToExist(logoSelector);
+            webDriver.Manage().Cookies.DeleteAllCookies();
         }
     }
 }

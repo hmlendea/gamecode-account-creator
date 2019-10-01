@@ -8,25 +8,26 @@ using GameCodeAccountCreator.Service.Models;
 
 namespace GameCodeAccountCreator.Service.Processors
 {
-    public sealed class GameCodeProcessor : WebProcessor, IGameCodeProcessor
+    public sealed class GameCodeProcessor : IGameCodeProcessor
     {
         public string HomePageUrl => "https://gamecode.win/";
         public string LogInUrl => $"{HomePageUrl}/login";
         public string AccountsUrl => $"{HomePageUrl}/users/accounts/all";
 
-        readonly SteamAccount account;
+        readonly IWebDriver webDriver;
+        readonly IWebProcessor webProcessor;
 
         public GameCodeProcessor(
-            IWebDriver driver,
-            SteamAccount account)
-            : base(driver)
+            IWebDriver webDriver,
+            IWebProcessor webProcessor)
         {
-            this.account = account;
+            this.webDriver = webDriver;
+            this.webProcessor = webProcessor;
         }
 
-        public void Register()
+        public void Register(SteamAccount account)
         {
-            GoToUrl(LogInUrl);
+            webProcessor.GoToUrl(LogInUrl);
 
             By popupSelector = By.XPath(@"//cloudflare-app[1]");
             By popupCloseButtonSelector = By.XPath(@"/html/body/cloudflare-app[1]/div/div[3]/a");
@@ -38,42 +39,51 @@ namespace GameCodeAccountCreator.Service.Processors
             By password2InputSelector = By.XPath(@"//*[@id='registerForm']/form/input[@name='password_confirmation']");
             By artsCardSelector = By.Id("text_arts");
 
-            Click(registrationTabSelector);
+            webProcessor.Click(registrationTabSelector);
 
-            WaitForElementToExist(popupCloseButtonSelector, TimeSpan.FromSeconds(1));
-            if (IsElementVisible(popupSelector))
+            webProcessor.WaitForElementToExist(popupCloseButtonSelector, TimeSpan.FromSeconds(1));
+            if (webProcessor.IsElementVisible(popupSelector))
             {
-                Click(popupSelector);
-                Click(popupCloseButtonSelector);
+                webProcessor.Click(popupSelector);
+                webProcessor.Click(popupCloseButtonSelector);
             }
 
-            SetText(usernameInputSelector, account.Username);
-            SetText(emailInputSelector, $"{account.Username}@yopmail.com");
-            SetText(password1InputSelector, account.Password);
-            SetText(password2InputSelector, account.Password);
+            webProcessor.SetText(usernameInputSelector, account.Username);
+            webProcessor.SetText(emailInputSelector, $"{account.Username}@yopmail.com");
+            webProcessor.SetText(password1InputSelector, account.Password);
+            webProcessor.SetText(password2InputSelector, account.Password);
 
-            WaitForElementToExist(artsCardSelector, waitIndefinetely: true);
+            webProcessor.WaitForElementToExist(artsCardSelector, waitIndefinetely: true);
         }
 
         public void LinkSteamAccount()
         {
-            GoToUrl(AccountsUrl);
-
             By steamConnectionButtonSelector = By.XPath(@"//i[contains(@class,'fa-steam')]/../a/button");
             By logInButtonSelector = By.Id("imageLogin");
             By gameCard1Selector = By.Id("gamesToggle_1");
             By kinguinAlertSelector = By.ClassName("edrone--push--alert-container");
 
-            Click(steamConnectionButtonSelector);
+            webProcessor.GoToUrl(AccountsUrl);
+            webProcessor.Click(steamConnectionButtonSelector);
 
             // TODO: Workaround the annoying redirect ad
-            Wait();
-            NewTab(AccountsUrl);
-            Click(steamConnectionButtonSelector);
+            webProcessor.Wait();
+            webProcessor.GoToUrl(AccountsUrl);
+            webProcessor.Click(steamConnectionButtonSelector);
 
-            Click(logInButtonSelector);
+            webProcessor.Click(logInButtonSelector);
 
-            WaitForElementToExist(gameCard1Selector);
+            webProcessor.WaitForElementToExist(gameCard1Selector);
+        }
+
+        public void ClearCookies()
+        {
+            webProcessor.GoToUrl(HomePageUrl);
+
+            By logoSelector = By.Id("logo-holder");
+
+            webProcessor.WaitForElementToExist(logoSelector);
+            webDriver.Manage().Cookies.DeleteAllCookies();
         }
     }
 }
