@@ -13,10 +13,14 @@ namespace GameCodeAccountCreator.Service.Processors
         public string HomePageUrl => "https://store.steampowered.com";
         public string LoginUrl => $"{HomePageUrl}/login/?redir=&redir_ssl=1";
 
+        readonly IWebDriver webDriver;
         readonly IWebProcessor webProcessor;
 
-        public SteamProcessor(IWebProcessor webProcessor)
+        public SteamProcessor(
+            IWebDriver webDriver,
+            IWebProcessor webProcessor)
         {
+            this.webDriver = webDriver;
             this.webProcessor = webProcessor;
         }
         
@@ -46,6 +50,16 @@ namespace GameCodeAccountCreator.Service.Processors
             {
                 throw new AuthenticationException("SteamGuard input required");
             }
+        }
+
+        public void ClearCookies()
+        {
+            webProcessor.GoToUrl(LoginUrl);
+
+            By logoSelector = By.Id("logo-holder");
+
+            webProcessor.WaitForElementToExist(logoSelector);
+            webDriver.Manage().Cookies.DeleteAllCookies();
         }
     }
 }

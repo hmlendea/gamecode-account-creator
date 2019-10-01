@@ -88,7 +88,7 @@ namespace GameCodeAccountCreator
                 .AddSingleton(debugSettings)
                 .AddSingleton(loggingSettings)
                 .AddSingleton<ILogger, NuciLogger>()
-                .AddTransient<IWebDriver>(s => SetupDriver())
+                .AddSingleton<IWebDriver>(s => SetupDriver())
                 .AddSingleton<IWebProcessor, WebProcessor>()
                 .AddSingleton<IGameCodeProcessor, GameCodeProcessor>()
                 .AddSingleton<ISteamProcessor, SteamProcessor>()

@@ -5,6 +5,8 @@ using System.Linq;
 using NuciDAL.Repositories;
 using NuciLog.Core;
 
+using OpenQA.Selenium;
+
 using GameCodeAccountCreator.Configuration;
 using GameCodeAccountCreator.DataAccess.DataObjects;
 using GameCodeAccountCreator.Logging;
@@ -20,6 +22,7 @@ namespace GameCodeAccountCreator.Service
         readonly ISteamProcessor steamProcessor;
         readonly IRepository<SteamAccountEntity> accountsRepository;
         readonly DebugSettings debugSettings;
+        readonly IWebDriver webDriver;
         readonly ILogger logger;
 
         public AccountCreator(
@@ -27,12 +30,14 @@ namespace GameCodeAccountCreator.Service
             ISteamProcessor steamProcessor,
             IRepository<SteamAccountEntity> accountsRepository,
             DebugSettings debugSettings,
+            IWebDriver webDriver,
             ILogger logger)
         {
             this.gameCodeProcessor = gameCodeProcessor;
             this.steamProcessor = steamProcessor;
             this.accountsRepository = accountsRepository;
             this.debugSettings = debugSettings;
+            this.webDriver = webDriver;
             this.logger = logger;
         }
 
@@ -53,6 +58,7 @@ namespace GameCodeAccountCreator.Service
         {
             LogInToSteam(account);
             RegisterOnGameCode(account);
+            ClearHistory();
         }
 
         void LogInToSteam(SteamAccount account)
@@ -86,6 +92,19 @@ namespace GameCodeAccountCreator.Service
             {
                 logger.Error(MyOperation.GameCodeRegistration, OperationStatus.Failure, ex.StackTrace, ex, new LogInfo(MyLogInfoKey.Username, account.Username));
                 throw;
+            }
+        }
+
+        void ClearHistory()
+        {
+            gameCodeProcessor.ClearCookies();
+            steamProcessor.ClearCookies();
+
+            webDriver.SwitchTo().Window(webDriver.WindowHandles[0]);
+            foreach (string tab in webDriver.WindowHandles.Skip(1))
+            {
+                webDriver.SwitchTo().Window(webDriver.WindowHandles[0]);
+                webDriver.Close();
             }
         }
     }

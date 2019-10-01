@@ -7,5 +7,7 @@ namespace GameCodeAccountCreator.Service.Processors
         void Register(SteamAccount account);
 
         void LinkSteamAccount();
+
+        void ClearCookies();
     }
 }

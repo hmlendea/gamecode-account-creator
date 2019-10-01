@@ -14,10 +14,14 @@ namespace GameCodeAccountCreator.Service.Processors
         public string LogInUrl => $"{HomePageUrl}/login";
         public string AccountsUrl => $"{HomePageUrl}/users/accounts/all";
 
+        readonly IWebDriver webDriver;
         readonly IWebProcessor webProcessor;
 
-        public GameCodeProcessor(IWebProcessor webProcessor)
+        public GameCodeProcessor(
+            IWebDriver webDriver,
+            IWebProcessor webProcessor)
         {
+            this.webDriver = webDriver;
             this.webProcessor = webProcessor;
         }
 
@@ -54,23 +58,32 @@ namespace GameCodeAccountCreator.Service.Processors
 
         public void LinkSteamAccount()
         {
-            webProcessor.GoToUrl(AccountsUrl);
-
             By steamConnectionButtonSelector = By.XPath(@"//i[contains(@class,'fa-steam')]/../a/button");
             By logInButtonSelector = By.Id("imageLogin");
             By gameCard1Selector = By.Id("gamesToggle_1");
             By kinguinAlertSelector = By.ClassName("edrone--push--alert-container");
 
+            webProcessor.GoToUrl(AccountsUrl);
             webProcessor.Click(steamConnectionButtonSelector);
 
             // TODO: Workaround the annoying redirect ad
             webProcessor.Wait();
-            webProcessor.NewTab(AccountsUrl);
+            webProcessor.GoToUrl(AccountsUrl);
             webProcessor.Click(steamConnectionButtonSelector);
 
             webProcessor.Click(logInButtonSelector);
 
             webProcessor.WaitForElementToExist(gameCard1Selector);
+        }
+
+        public void ClearCookies()
+        {
+            webProcessor.GoToUrl(HomePageUrl);
+
+            By logoSelector = By.Id("logo-holder");
+
+            webProcessor.WaitForElementToExist(logoSelector);
+            webDriver.Manage().Cookies.DeleteAllCookies();
         }
     }
 }
