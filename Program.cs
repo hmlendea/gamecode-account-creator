@@ -29,11 +29,27 @@ namespace GameCodeAccountCreator
             serviceProvider = CreateIOC();
 
             logger = serviceProvider.GetService<ILogger>();
-            logger.SetSourceContext<Program>();
-
             logger.Info(Operation.StartUp, $"Application started");
-            Run();
-            logger.Info(Operation.ShutDown, $"Application stopped");
+
+            try
+            {
+                Run();
+            }
+            catch (AggregateException ex)
+            {
+                foreach (Exception innerException in ex.InnerExceptions)
+                {
+                    logger.Fatal(Operation.Unknown, OperationStatus.Failure, innerException);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Fatal(Operation.Unknown, OperationStatus.Failure, ex);
+            }
+            finally
+            {
+                logger.Info(Operation.ShutDown, $"Application stopped");
+            }
         }
         
         static IConfiguration LoadConfiguration()
