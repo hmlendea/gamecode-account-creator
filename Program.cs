@@ -26,21 +26,25 @@ namespace GameCodeAccountCreator
         static NuciLoggerSettings loggingSettings;
 
         static IServiceProvider serviceProvider;
-        static ILogger logger;
 
         static void Main(string[] args)
         {
             LoadConfiguration();
             serviceProvider = CreateIOC();
+            Run();
+        }
 
+        static void Run()
+        {
             IWebDriver driver = serviceProvider.GetService<IWebDriver>();
+            IAccountCreator accountCreator = serviceProvider.GetService<IAccountCreator>();
+            ILogger logger = serviceProvider.GetService<ILogger>();
 
-            logger = serviceProvider.GetService<ILogger>();
             logger.Info(Operation.StartUp, $"Application started");
 
             try
             {
-                Run();
+                accountCreator.CreateAccounts();
             }
             catch (AggregateException ex)
             {
@@ -91,12 +95,6 @@ namespace GameCodeAccountCreator
                 .AddSingleton<IRepository<SteamAccountEntity>>(s => new CsvRepository<SteamAccountEntity>(dataSettings.AccountsStorePath))
                 .AddSingleton<IAccountCreator, AccountCreator>()
                 .BuildServiceProvider();
-        }
-
-        static void Run()
-        {
-            IAccountCreator accountCreator = serviceProvider.GetService<IAccountCreator>();
-            accountCreator.CreateAccounts();
         }
 
         static IWebDriver SetupDriver()
