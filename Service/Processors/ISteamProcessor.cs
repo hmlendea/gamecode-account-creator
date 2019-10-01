@@ -1,8 +1,6 @@
-using NuciWeb;
-
 namespace GameCodeAccountCreator.Service.Processors
 {
-    public interface ISteamProcessor : IWebProcessor
+    public interface ISteamProcessor
     {
         void LogIn();
     }

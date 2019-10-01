@@ -19,15 +19,21 @@ namespace GameCodeAccountCreator.Service
 {
     public sealed class AccountCreator : IAccountCreator
     {
+        readonly IGameCodeProcessor gameCodeProcessor;
+        readonly ISteamProcessor steamProcessor;
         readonly IRepository<SteamAccountEntity> accountsRepository;
         readonly DebugSettings debugSettings;
         readonly ILogger logger;
 
         public AccountCreator(
+            IGameCodeProcessor gameCodeProcessor,
+            ISteamProcessor steamProcessor,
             IRepository<SteamAccountEntity> accountsRepository,
             DebugSettings debugSettings,
             ILogger logger)
         {
+            this.gameCodeProcessor = gameCodeProcessor;
+            this.steamProcessor = steamProcessor;
             this.accountsRepository = accountsRepository;
             this.debugSettings = debugSettings;
             this.logger = logger;
@@ -48,33 +54,17 @@ namespace GameCodeAccountCreator.Service
 
         void CreateAccount(SteamAccount account)
         {
-            IWebDriver driver = SetupDriver();
-
-            try
-            {
-                LogInToSteam(driver, account);
-                RegisterOnGameCode(driver, account);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.StackTrace);
-            }
-            finally
-            {
-                driver.Quit();
-            }
+            LogInToSteam(account);
+            RegisterOnGameCode(account);
         }
 
-        void LogInToSteam(IWebDriver driver, SteamAccount account)
+        void LogInToSteam(SteamAccount account)
         {
             logger.Info(MyOperation.SteamLogIn, OperationStatus.Started, new LogInfo(MyLogInfoKey.Username, account.Username));
 
             try
             {
-                ISteamProcessor steamProcessor = new SteamProcessor(driver, account);
                 steamProcessor.LogIn();
-                steamProcessor.Dispose();
-
                 logger.Debug(MyOperation.SteamLogIn, OperationStatus.Success, new LogInfo(MyLogInfoKey.Username, account.Username));
             }
             catch (Exception ex)
@@ -84,16 +74,14 @@ namespace GameCodeAccountCreator.Service
             }
         }
 
-        void RegisterOnGameCode(IWebDriver driver, SteamAccount account)
+        void RegisterOnGameCode(SteamAccount account)
         {
             logger.Info(MyOperation.GameCodeRegistration, OperationStatus.Started, new LogInfo(MyLogInfoKey.Username, account.Username));
 
             try
             {
-                IGameCodeProcessor gameCodeProcessor = new GameCodeProcessor(driver, account);
                 gameCodeProcessor.Register();
                 gameCodeProcessor.LinkSteamAccount();
-                gameCodeProcessor.Dispose();
 
                 logger.Debug(MyOperation.GameCodeRegistration, OperationStatus.Success, new LogInfo(MyLogInfoKey.Username, account.Username));
             }
@@ -102,40 +90,6 @@ namespace GameCodeAccountCreator.Service
                 logger.Error(MyOperation.GameCodeRegistration, OperationStatus.Failure, ex.StackTrace, ex, new LogInfo(MyLogInfoKey.Username, account.Username));
                 throw;
             }
-        }
-
-        IWebDriver SetupDriver()
-        {
-            ChromeOptions options = new ChromeOptions();
-            options.PageLoadStrategy = PageLoadStrategy.None;
-            options.AddArgument("--silent");
-            options.AddArgument("--no-sandbox");
-			options.AddArgument("--disable-translate");
-			options.AddArgument("--disable-infobars");
-            options.AddArgument("--disable-gpu");
-            options.AddArgument("--start-maximized");
-
-            ChromeDriverService service = ChromeDriverService.CreateDefaultService();
-            service.SuppressInitialDiagnosticInformation = true;
-            service.HideCommandPromptWindow = true;
-
-            IWebDriver driver = new ChromeDriver(service, options, TimeSpan.FromSeconds(debugSettings.PageLoadTimeout));
-            IJavaScriptExecutor scriptExecutor = (IJavaScriptExecutor)driver;
-            string userAgent = (string)scriptExecutor.ExecuteScript("return navigator.userAgent;");
-
-            if (userAgent.Contains("Headless"))
-            {
-                userAgent = userAgent.Replace("Headless", "");
-                options.AddArgument($"--user-agent={userAgent}");
-
-                driver.Quit();
-                driver = new ChromeDriver(service, options);
-            }
-
-            driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(debugSettings.PageLoadTimeout);
-            driver.Manage().Window.Maximize();
-
-            return driver;
         }
     }
 }

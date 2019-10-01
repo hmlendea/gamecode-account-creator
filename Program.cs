@@ -7,10 +7,15 @@ using NuciDAL.Repositories;
 using NuciLog;
 using NuciLog.Configuration;
 using NuciLog.Core;
+using NuciWeb;
+
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
 
 using GameCodeAccountCreator.Configuration;
 using GameCodeAccountCreator.DataAccess.DataObjects;
 using GameCodeAccountCreator.Service;
+using GameCodeAccountCreator.Service.Processors;
 
 namespace GameCodeAccountCreator
 {
@@ -27,6 +32,8 @@ namespace GameCodeAccountCreator
         {
             LoadConfiguration();
             serviceProvider = CreateIOC();
+
+            IWebDriver driver = serviceProvider.GetService<IWebDriver>();
 
             logger = serviceProvider.GetService<ILogger>();
             logger.Info(Operation.StartUp, $"Application started");
@@ -48,6 +55,7 @@ namespace GameCodeAccountCreator
             }
             finally
             {
+                driver?.Quit();
                 logger.Info(Operation.ShutDown, $"Application stopped");
             }
         }
@@ -76,6 +84,10 @@ namespace GameCodeAccountCreator
                 .AddSingleton(debugSettings)
                 .AddSingleton(loggingSettings)
                 .AddSingleton<ILogger, NuciLogger>()
+                .AddTransient<IWebDriver>(s => SetupDriver())
+                .AddSingleton<IWebProcessor, WebProcessor>()
+                .AddSingleton<IGameCodeProcessor, GameCodeProcessor>()
+                .AddSingleton<ISteamProcessor, SteamProcessor>()
                 .AddSingleton<IRepository<SteamAccountEntity>>(s => new CsvRepository<SteamAccountEntity>(dataSettings.AccountsStorePath))
                 .AddSingleton<IAccountCreator, AccountCreator>()
                 .BuildServiceProvider();
@@ -85,6 +97,40 @@ namespace GameCodeAccountCreator
         {
             IAccountCreator accountCreator = serviceProvider.GetService<IAccountCreator>();
             accountCreator.CreateAccounts();
+        }
+
+        static IWebDriver SetupDriver()
+        {
+            ChromeOptions options = new ChromeOptions();
+            options.PageLoadStrategy = PageLoadStrategy.None;
+            options.AddArgument("--silent");
+            options.AddArgument("--no-sandbox");
+			options.AddArgument("--disable-translate");
+			options.AddArgument("--disable-infobars");
+            options.AddArgument("--disable-gpu");
+            options.AddArgument("--start-maximized");
+
+            ChromeDriverService service = ChromeDriverService.CreateDefaultService();
+            service.SuppressInitialDiagnosticInformation = true;
+            service.HideCommandPromptWindow = true;
+
+            IWebDriver driver = new ChromeDriver(service, options, TimeSpan.FromSeconds(debugSettings.PageLoadTimeout));
+            IJavaScriptExecutor scriptExecutor = (IJavaScriptExecutor)driver;
+            string userAgent = (string)scriptExecutor.ExecuteScript("return navigator.userAgent;");
+
+            if (userAgent.Contains("Headless"))
+            {
+                userAgent = userAgent.Replace("Headless", "");
+                options.AddArgument($"--user-agent={userAgent}");
+
+                driver.Quit();
+                driver = new ChromeDriver(service, options);
+            }
+
+            driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(debugSettings.PageLoadTimeout);
+            driver.Manage().Window.Maximize();
+
+            return driver;
         }
     }
 }

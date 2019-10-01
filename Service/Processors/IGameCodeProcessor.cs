@@ -1,8 +1,6 @@
-using NuciWeb;
-
 namespace GameCodeAccountCreator.Service.Processors
 {
-    public interface IGameCodeProcessor : IWebProcessor
+    public interface IGameCodeProcessor
     {
         void Register();
 
